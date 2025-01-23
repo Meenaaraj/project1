@@ -1,17 +1,18 @@
 pipeline {
     agent any
     environment {
-        IMAGE_NAME = "myapp"  // Your application image name
-        IMAGE_TAG = "v1"      // The tag for the image
+        IMAGE_NAME = "myapp" // Your application image name
+        IMAGE_TAG = "v1"     // The tag for the image
         REGISTRY = "meenaaraj" // Your Docker Hub username
         KUBECONFIG = credentials('kubeconfig-credentials-id') // Your kubeconfig Jenkins credential ID
-        DOCKER_CREDENTIALS = credentials('docker-hub-credentials-id') // Your Docker Hub credentials ID
     }
     stages {
         stage('Checkout') {
             steps {
                 // Checkout the code from your repository
-                git 'https://github.com/Meenaaraj/project1.git'
+                git branch: 'main', 
+                    url: 'https://github.com/Meenaaraj/project1.git', 
+                    credentialsId: 'github-credentials-id'
             }
         }
 
