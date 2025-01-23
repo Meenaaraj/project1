@@ -1,18 +1,20 @@
 pipeline {
     agent any
     environment {
-        IMAGE_NAME = "myapp"
-        IMAGE_TAG = "2.0"
-        REGISTRY = "meenaaraj"
+        IMAGE_NAME = "myapp"  // Your application image name
+        IMAGE_TAG = "v1"      // The tag for the image
+        REGISTRY = "meenaaraj" // Your Docker Hub username
+        KUBECONFIG = credentials('kubeconfig-credentials-id') // Your kubeconfig Jenkins credential ID
+        DOCKER_CREDENTIALS = credentials('docker-hub-credentials-id') // Your Docker Hub credentials ID
     }
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the repository
-                git 'https://github.com/your-repository/myapp.git'
+                // Checkout the code from your repository
+                git 'https://github.com/Meenaaraj/project1.git'
             }
         }
-        
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -21,50 +23,44 @@ pipeline {
                 }
             }
         }
-        
-        stage('Run Tests') {
+
+        stage('Login to Docker Hub') {
             steps {
                 script {
-                    // Run tests (if any, you can add test scripts here)
-                    echo "Running tests..."
-                    // You can add `pytest` or another testing framework if needed
+                    // Login to Docker Hub using Jenkins credentials
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                    }
                 }
             }
         }
-        
-        stage('Push Docker Image') {
+
+        stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    // Push the image to Docker registry
-                    sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+                    // Push the Docker image to Docker Hub
                     sh 'docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG'
                 }
             }
         }
-        
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Apply the Kubernetes configurations (Deployment & Service)
-                    sh 'kubectl apply -f deployment.yaml'
-                    sh 'kubectl apply -f service.yaml'
+                    // Deploy the app to Kubernetes
+                    withCredentials([file(credentialsId: 'kubeconfig-credentials-id', variable: 'KUBECONFIG')]) {
+                        sh 'kubectl apply -f deployment.yaml'
+                    }
                 }
-            }
-        }
-        
-        stage('Clean Up') {
-            steps {
-                // Clean up old Docker images and Kubernetes pods if needed
-                sh 'docker system prune -f'
             }
         }
     }
     post {
         success {
-            echo "Pipeline completed successfully!"
+            echo "Pipeline completed successfully."
         }
         failure {
-            echo "Pipeline failed!"
+            echo "Pipeline failed."
         }
     }
 }
